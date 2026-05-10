@@ -23,6 +23,28 @@ export async function parsePdf(file: File): Promise<{
 
   const fullText = pageTexts.map((p) => p.text).join("\n");
 
+  // 如果文本提取失败（空或太少），使用 OCR 视觉模型兜底
+  const MIN_TEXT_LENGTH = 100; // 最少字符数
+  if (fullText.length < MIN_TEXT_LENGTH) {
+    console.log(`[PDF] 文本提取失败 (${fullText.length} 字符)，使用 OCR 兜底...`);
+    try {
+      const ocrText = await parsePdfWithOCR(file, pdf);
+      if (ocrText && ocrText.length > fullText.length) {
+        return { text: ocrText, chapters: [{
+          id: "ch_0",
+          title: file.name.replace(/\.pdf$/i, ""),
+          index: 0,
+          pageStart: 1,
+          pageEnd: pdf.numPages,
+          text: ocrText,
+          charCount: ocrText.length,
+        }]};
+      }
+    } catch (ocrError) {
+      console.error("[PDF] OCR 失败，使用空文本:", ocrError);
+    }
+  }
+
   // 尝试读取大纲
   let outline: any[] | null = null;
   try {
@@ -162,4 +184,47 @@ function buildChaptersByRegex(
     });
   }
   return chapters;
+}
+
+// OCR 兜底：将 PDF 前几页渲染为图片，调用视觉模型提取文本
+async function parsePdfWithOCR(file: File, pdf: any): Promise<string> {
+  const pdfjsLib = await import("pdfjs-dist");
+  const MAX_PAGES = Math.min(pdf.numPages, 5); // 最多处理前5页
+  const images: string[] = [];
+
+  // 渲染页面为图片
+  for (let i = 1; i <= MAX_PAGES; i++) {
+    try {
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale: 2.0 }); // 2倍分辨率提高识别率
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) continue;
+      
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+      images.push(dataUrl);
+    } catch (e) {
+      console.error(`[OCR] 第 ${i} 页渲染失败:`, e);
+    }
+  }
+
+  if (images.length === 0) return "";
+
+  // 调用 OCR API
+  const response = await fetch("/api/ocr", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ images }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`OCR API 失败: ${response.status}`);
+  }
+
+  const { text } = await response.json();
+  return text || "";
 }

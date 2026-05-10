@@ -5,9 +5,10 @@ import { createOpenAI } from '@ai-sdk/openai';
 export const maxDuration = 60;
 export const runtime = "nodejs";
 
-const modelscope = createOpenAI({
-  baseURL: 'https://api-inference.modelscope.cn/v1',
-  apiKey: process.env.MODELSCOPE_API_KEY,
+// 使用火山引擎 Ark (kimi-k2.6 支持视觉能力)
+const ark = createOpenAI({
+  baseURL: process.env.ARK_BASE_URL || 'https://ark.cn-beijing.volces.com/api/v3',
+  apiKey: process.env.ARK_API_KEY,
 });
 
 export async function POST(req: Request) {
@@ -24,8 +25,8 @@ export async function POST(req: Request) {
     }));
 
     const { text } = await generateText({
-      model: modelscope.chat('qwen-vl-max'),
-      system: '你是一个专业的医学教材文本提取器。请读取图片中的文本，忽略页眉页脚，保留章节标题（用 Markdown 格式），直接输出纯文本，不要任何解释。',
+      model: ark.chat(process.env.ARK_CHAT_MODEL || 'kimi-k2.6'),
+      system: '你是一个专业的教材文本提取器。请读取图片中的文本，忽略页眉页脚，保留章节标题（用 Markdown 格式），直接输出纯文本，不要任何解释。',
       messages: [
         {
           role: 'user',
