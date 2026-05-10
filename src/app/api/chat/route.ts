@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
 import { chat } from "@/lib/doubao";
 import type { ChatMessage, AlignDecision } from "@/lib/types";
+import { TMP_DIR } from "@/lib/paths";
 
 export const maxDuration = 60;
 export const runtime = "nodejs";
@@ -39,6 +42,28 @@ export async function POST(req: Request) {
       }
     } catch {
       // ignore
+    }
+
+    // 执行工具调用
+    if (toolCall?.name === "update_decision") {
+      try {
+        const alignedPath = path.join(TMP_DIR, "aligned.json");
+        if (fs.existsSync(alignedPath)) {
+          const aligned = JSON.parse(fs.readFileSync(alignedPath, "utf-8"));
+          const decisions: AlignDecision[] = aligned.decisions || [];
+          const target = decisions.find(
+            (d: AlignDecision) => d.id === toolCall.args.decisionId
+          );
+          if (target) {
+            target.decision = toolCall.args.newDecision;
+            target.modifiedByUser = true;
+            fs.writeFileSync(alignedPath, JSON.stringify(aligned, null, 2));
+            updatedDecisions = decisions;
+          }
+        }
+      } catch (e) {
+        console.error("Tool call execution failed:", e);
+      }
     }
 
     return NextResponse.json({

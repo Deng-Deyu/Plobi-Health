@@ -2,6 +2,8 @@
 
 > 第一届浙大 AI 全栈极速黑客松参赛作品
 
+[![Vercel Deploy](https://img.shields.io/badge/Vercel-线上演示-000?logo=vercel)](https://请替换为实际URL.vercel.app)
+
 一个基于 LLM 的学科知识整合 Agent，支持多格式教材解析、知识图谱自动抽取、跨教材对齐整合、RAG 问答和多轮对话修改决策。可将多本教材的知识点去重合并，生成压缩后的统一知识图谱。
 
 ## 在线演示

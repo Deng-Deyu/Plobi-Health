@@ -53,6 +53,11 @@ export default function ChatPanel() {
         ts: Date.now(),
       };
       setMessages((prev) => [...prev, assistantMsg]);
+
+      // 如果决策被更新，通知其他组件刷新
+      if (data.updatedDecisions) {
+        window.dispatchEvent(new CustomEvent("decisions-updated"));
+      }
     } catch (e) {
       setMessages((prev) => [
         ...prev,
