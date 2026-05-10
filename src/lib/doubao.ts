@@ -1,27 +1,25 @@
 import OpenAI from 'openai';
 
-function getArk() {
-  const apiKey = process.env.ARK_API_KEY;
-  const baseURL = process.env.ARK_BASE_URL;
-  
-  if (!apiKey) {
-    throw new Error(
-      'Missing ARK_API_KEY. Please set the environment variable.\n' +
-      'For Vercel: vercel env add ARK_API_KEY\n' +
-      'Or use OPENAI_API_KEY as fallback.'
-    );
-  }
-  
+// Chat模型：使用Kimi官方API
+function getChatClient() {
   return new OpenAI({
-    apiKey,
-    baseURL: baseURL || 'https://ark.cn-beijing.volces.com/api/v3',
+    apiKey: process.env.KIMI_API_KEY || process.env.ARK_API_KEY!,
+    baseURL: process.env.KIMI_BASE_URL || process.env.ARK_BASE_URL,
+  });
+}
+
+// Embedding模型：使用火山引擎
+function getEmbedClient() {
+  return new OpenAI({
+    apiKey: process.env.ARK_API_KEY!,
+    baseURL: process.env.ARK_BASE_URL || 'https://ark.cn-beijing.volces.com/api/v3',
   });
 }
 
 export async function chat(messages: any[], opts: { json?: boolean; tools?: any[] } = {}) {
-  const ark = getArk();
-  const res = await ark.chat.completions.create({
-    model: process.env.ARK_CHAT_MODEL!,
+  const client = getChatClient();
+  const res = await client.chat.completions.create({
+    model: process.env.KIMI_MODEL || process.env.ARK_CHAT_MODEL!,
     messages,
     response_format: opts.json ? { type: 'json_object' } : undefined,
     tools: opts.tools,
@@ -33,15 +31,15 @@ export async function chat(messages: any[], opts: { json?: boolean; tools?: any[
 export async function batchEmbed(texts: string[]): Promise<number[][]> {
   // doubao-embedding-vision 单次限制最多 10 条
   const BATCH = 10;
-  const ark = getArk();
+  const client = getEmbedClient();
   const out: number[][] = [];
   for (let i = 0; i < texts.length; i += BATCH) {
     const slice = texts.slice(i, i + BATCH);
-    const res = await ark.embeddings.create({
+    const res = await client.embeddings.create({
       model: process.env.ARK_EMBED_MODEL!,
       input: slice,
     });
-    out.push(...res.data.map(d => d.embedding as number[]));
+    out.push(...res.data.map((d: any) => d.embedding as number[]));
   }
   return out;
 }

@@ -54,3 +54,6 @@ CLAUDE.md
 TASK.md
 AI_DEV_SPEC.md
 AGENTS.md
+
+.vercel
+.env*.local
