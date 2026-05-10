@@ -289,6 +289,7 @@ export default function TextbookPanel({
               <CardContent className="p-3 pt-1">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
                   <Badge variant="outline">{tb.format.toUpperCase()}</Badge>
+                  {tb.format === "pdf" && <Badge variant="secondary" className="text-orange-500 bg-orange-50">[视觉模型兜底解析中...]</Badge>}
                   <span>{tb.chapters.length} 章</span>
                   <span>{(tb.size / 1024).toFixed(1)} KB</span>
                   {tb.status === "error" && (
