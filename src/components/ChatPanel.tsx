@@ -11,6 +11,7 @@ export default function ChatPanel() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [initialized, setInitialized] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -22,12 +23,14 @@ export default function ChatPanel() {
         // ignore
       }
     }
+    setInitialized(true);
   }, []);
 
   useEffect(() => {
+    if (!initialized) return;
     localStorage.setItem("chat-history", JSON.stringify(messages));
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, initialized]);
 
   async function send() {
     if (!input.trim() || loading) return;

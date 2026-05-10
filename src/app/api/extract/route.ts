@@ -14,10 +14,20 @@ function readTextbooks(): Textbook[] {
   return JSON.parse(fs.readFileSync(TB_PATH, "utf-8"));
 }
 
+function kgPath(textbookId: string) {
+  return path.join(process.cwd(), "tmp", `kg-${textbookId}.json`);
+}
+
+function readKg(textbookId: string): { knowledgePoints: KnowledgePoint[]; relations: Relation[] } | null {
+  const p = kgPath(textbookId);
+  if (!fs.existsSync(p)) return null;
+  return JSON.parse(fs.readFileSync(p, "utf-8"));
+}
+
 function writeKg(textbookId: string, data: { knowledgePoints: KnowledgePoint[]; relations: Relation[] }) {
   const dir = path.join(process.cwd(), "tmp");
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  const p = path.join(dir, `kg-${textbookId}.json`);
+  const p = kgPath(textbookId);
   fs.writeFileSync(p, JSON.stringify(data, null, 2));
 }
 
@@ -40,13 +50,27 @@ async function runWithLimit<T>(tasks: (() => Promise<T>)[], limit: number): Prom
 export async function POST(req: Request) {
   try {
     const { textbookId } = await req.json();
+
+    // 优先读取缓存
+    const cached = readKg(textbookId);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
+
     const textbooks = readTextbooks();
     const textbook = textbooks.find((t) => t.id === textbookId);
     if (!textbook) {
       return NextResponse.json({ error: "教材不存在" }, { status: 404 });
     }
 
-    const tasks = textbook.chapters.map((ch) => async () => {
+    // 过滤掉空章节和过短章节（目录/前言）
+    const validChapters = textbook.chapters.filter((ch) => ch.charCount >= 200);
+
+    if (validChapters.length === 0) {
+      return NextResponse.json({ error: "教材没有有效的正文章节（字数 < 200 的已过滤）" }, { status: 400 });
+    }
+
+    const tasks = validChapters.map((ch) => async () => {
       const result = await extractFromChapter(ch.title, ch.text);
       // 注入 textbookId / chapterId
       result.knowledgePoints.forEach((kp) => {

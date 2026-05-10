@@ -10,8 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Home() {
   const [selectedTextbookId, setSelectedTextbookId] = useState<string | null>(null);
-  const [allTextbookIds, setAllTextbookIds] = useState<string[]>([]);
-  const selectedIds = selectedTextbookId ? [selectedTextbookId] : [];
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const handleSelect = (id: string | null) => {
     setSelectedTextbookId(id);
@@ -21,7 +20,11 @@ export default function Home() {
     <div className="flex flex-1 h-full">
       {/* Left Panel: Textbook Management (30%) */}
       <aside className="w-[30%] min-w-[280px] border-r border-border bg-card flex flex-col">
-        <TextbookPanel onSelect={handleSelect} />
+        <TextbookPanel
+          onSelect={handleSelect}
+          selectedIds={selectedIds}
+          onSelectionChange={setSelectedIds}
+        />
       </aside>
 
       {/* Center Panel: Knowledge Graph (50%) */}
@@ -35,7 +38,7 @@ export default function Home() {
             <GraphView textbookId={selectedTextbookId} />
           </TabsContent>
           <TabsContent value="compare" className="flex-1 m-0 overflow-hidden">
-            <GraphCompare textbookIds={allTextbookIds} />
+            <GraphCompare textbookIds={selectedIds} />
           </TabsContent>
         </Tabs>
       </main>

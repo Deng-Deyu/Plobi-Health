@@ -1,11 +1,14 @@
 import OpenAI from 'openai';
 
-export const ark = new OpenAI({
-  apiKey: process.env.ARK_API_KEY!,
-  baseURL: process.env.ARK_BASE_URL,
-});
+function getArk() {
+  return new OpenAI({
+    apiKey: process.env.ARK_API_KEY!,
+    baseURL: process.env.ARK_BASE_URL,
+  });
+}
 
 export async function chat(messages: any[], opts: { json?: boolean; tools?: any[] } = {}) {
+  const ark = getArk();
   const res = await ark.chat.completions.create({
     model: process.env.ARK_CHAT_MODEL!,
     messages,
@@ -17,7 +20,9 @@ export async function chat(messages: any[], opts: { json?: boolean; tools?: any[
 }
 
 export async function batchEmbed(texts: string[]): Promise<number[][]> {
-  const BATCH = 64;
+  // doubao-embedding-vision 单次限制最多 10 条
+  const BATCH = 10;
+  const ark = getArk();
   const out: number[][] = [];
   for (let i = 0; i < texts.length; i += BATCH) {
     const slice = texts.slice(i, i + BATCH);

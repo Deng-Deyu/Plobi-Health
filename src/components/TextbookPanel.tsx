@@ -20,13 +20,22 @@ interface UploadTask {
   errorMsg?: string;
 }
 
-export default function TextbookPanel({ onSelect }: { onSelect?: (id: string | null) => void }) {
+export default function TextbookPanel({
+  onSelect,
+  selectedIds,
+  onSelectionChange,
+}: {
+  onSelect?: (id: string | null) => void;
+  selectedIds?: string[];
+  onSelectionChange?: (ids: string[]) => void;
+}) {
   const [textbooks, setTextbooks] = useState<Textbook[]>([]);
   const [tasks, setTasks] = useState<UploadTask[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [localSelected, setLocalSelected] = useState<Set<string>>(new Set());
 
   const fetchList = useCallback(async () => {
     try {
@@ -45,6 +54,26 @@ export default function TextbookPanel({ onSelect }: { onSelect?: (id: string | n
   useEffect(() => {
     fetchList();
   }, [fetchList]);
+
+  // 同步外部 selectedIds
+  useEffect(() => {
+    if (selectedIds) {
+      setLocalSelected(new Set(selectedIds));
+    }
+  }, [selectedIds]);
+
+  const toggleSelect = (id: string) => {
+    setLocalSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      onSelectionChange?.(Array.from(next));
+      return next;
+    });
+  };
 
   const parseFile = async (file: File): Promise<{ chapters: Chapter[]; fullText: string }> => {
     const ext = file.name.split(".").pop()?.toLowerCase() as
@@ -224,28 +253,37 @@ export default function TextbookPanel({ onSelect }: { onSelect?: (id: string | n
           textbooks.map((tb) => (
             <Card
               key={tb.id}
-              className={`cursor-pointer hover:bg-accent/50 transition-colors ${
+              className={`transition-colors ${
                 tb.status === "error" ? "border-destructive" : ""
-              }`}
+              } ${localSelected.has(tb.id) ? "bg-primary/5 border-primary/30" : ""}`}
             >
-              <CardHeader
-                className="p-3 pb-0"
-                onClick={() => {
-                  const next = expandedId === tb.id ? null : tb.id;
-                  setExpandedId(next);
-                  onSelect?.(next ? tb.id : null);
-                }}
-              >
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-muted-foreground" />
-                    <span className="truncate">{tb.name}</span>
-                  </CardTitle>
-                  {expandedId === tb.id ? (
-                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                  )}
+              <CardHeader className="p-3 pb-0">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={localSelected.has(tb.id)}
+                    onChange={() => toggleSelect(tb.id)}
+                    className="shrink-0 w-4 h-4"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                  <div
+                    className="flex-1 flex items-center justify-between cursor-pointer"
+                    onClick={() => {
+                      const next = expandedId === tb.id ? null : tb.id;
+                      setExpandedId(next);
+                      onSelect?.(next ? tb.id : null);
+                    }}
+                  >
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-muted-foreground" />
+                      <span className="truncate">{tb.name}</span>
+                    </CardTitle>
+                    {expandedId === tb.id ? (
+                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="p-3 pt-1">
