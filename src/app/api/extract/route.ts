@@ -3,11 +3,12 @@ import fs from "fs";
 import path from "path";
 import type { Textbook, KnowledgePoint, Relation } from "@/lib/types";
 import { extractFromChapter } from "@/lib/extract";
+import { TMP_DIR } from "@/lib/paths";
 
 export const maxDuration = 60;
 export const runtime = "nodejs";
 
-const TB_PATH = path.join(process.cwd(), "tmp", "textbooks.json");
+const TB_PATH = path.join(TMP_DIR, "textbooks.json");
 
 function readTextbooks(): Textbook[] {
   if (!fs.existsSync(TB_PATH)) return [];
@@ -15,7 +16,7 @@ function readTextbooks(): Textbook[] {
 }
 
 function kgPath(textbookId: string) {
-  return path.join(process.cwd(), "tmp", `kg-${textbookId}.json`);
+  return path.join(TMP_DIR, `kg-${textbookId}.json`);
 }
 
 function readKg(textbookId: string): { knowledgePoints: KnowledgePoint[]; relations: Relation[] } | null {

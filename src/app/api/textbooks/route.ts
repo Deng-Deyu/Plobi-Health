@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import type { Textbook } from "@/lib/types";
+import { TMP_DIR } from "@/lib/paths";
 
 export const maxDuration = 60;
 export const runtime = "nodejs";
 
-const DB_PATH = path.join(process.cwd(), "tmp", "textbooks.json");
+const DB_PATH = path.join(TMP_DIR, "textbooks.json");
 
 function ensureDb() {
   const dir = path.dirname(DB_PATH);

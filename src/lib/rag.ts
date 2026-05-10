@@ -2,8 +2,9 @@ import fs from "fs";
 import path from "path";
 import { cosine } from "./doubao";
 import type { Chunk } from "./types";
+import { TMP_DIR } from "./paths";
 
-const VECTORS_PATH = path.join(process.cwd(), "tmp", "vectors.json");
+const VECTORS_PATH = path.join(TMP_DIR, "vectors.json");
 
 export interface VectorEntry {
   chunk: Chunk;
@@ -16,8 +17,7 @@ export function loadVectors(): VectorEntry[] {
 }
 
 export function saveVectors(entries: VectorEntry[]) {
-  const dir = path.join(process.cwd(), "tmp");
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  if (!fs.existsSync(TMP_DIR)) fs.mkdirSync(TMP_DIR, { recursive: true });
   fs.writeFileSync(VECTORS_PATH, JSON.stringify(entries, null, 2));
 }
 

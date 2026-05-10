@@ -5,11 +5,12 @@ import type { Textbook } from "@/lib/types";
 import { chunkTextbook } from "@/lib/chunk";
 import { batchEmbed } from "@/lib/doubao";
 import { saveVectors, type VectorEntry } from "@/lib/rag";
+import { TMP_DIR } from "@/lib/paths";
 
 export const maxDuration = 60;
 export const runtime = "nodejs";
 
-const TB_PATH = path.join(process.cwd(), "tmp", "textbooks.json");
+const TB_PATH = path.join(TMP_DIR, "textbooks.json");
 
 function readTextbooks(): Textbook[] {
   if (!fs.existsSync(TB_PATH)) return [];
