@@ -1,25 +1,25 @@
 import OpenAI from 'openai';
 
-// Chat模型：使用Kimi官方API
-function getChatClient() {
+function getArk() {
+  const apiKey = process.env.ARK_API_KEY;
+  const baseURL = process.env.ARK_BASE_URL;
+  
+  if (!apiKey) {
+    throw new Error(
+      'Missing ARK_API_KEY. Please set the environment variable.'
+    );
+  }
+  
   return new OpenAI({
-    apiKey: process.env.KIMI_API_KEY || process.env.ARK_API_KEY!,
-    baseURL: process.env.KIMI_BASE_URL || process.env.ARK_BASE_URL,
-  });
-}
-
-// Embedding模型：使用火山引擎
-function getEmbedClient() {
-  return new OpenAI({
-    apiKey: process.env.ARK_API_KEY!,
-    baseURL: process.env.ARK_BASE_URL || 'https://ark.cn-beijing.volces.com/api/v3',
+    apiKey,
+    baseURL: baseURL || 'https://ark.cn-beijing.volces.com/api/v3',
   });
 }
 
 export async function chat(messages: any[], opts: { json?: boolean; tools?: any[] } = {}) {
-  const client = getChatClient();
-  const res = await client.chat.completions.create({
-    model: process.env.KIMI_MODEL || process.env.ARK_CHAT_MODEL!,
+  const ark = getArk();
+  const res = await ark.chat.completions.create({
+    model: process.env.ARK_CHAT_MODEL!,
     messages,
     response_format: opts.json ? { type: 'json_object' } : undefined,
     tools: opts.tools,
@@ -29,13 +29,13 @@ export async function chat(messages: any[], opts: { json?: boolean; tools?: any[
 }
 
 export async function batchEmbed(texts: string[]): Promise<number[][]> {
-  // doubao-embedding-vision 单次限制最多 10 条
+  // doubao-embedding 单次限制最多 10 条
   const BATCH = 10;
-  const client = getEmbedClient();
+  const ark = getArk();
   const out: number[][] = [];
   for (let i = 0; i < texts.length; i += BATCH) {
     const slice = texts.slice(i, i + BATCH);
-    const res = await client.embeddings.create({
+    const res = await ark.embeddings.create({
       model: process.env.ARK_EMBED_MODEL!,
       input: slice,
     });
