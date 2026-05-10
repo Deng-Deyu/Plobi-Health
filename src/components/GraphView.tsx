@@ -42,6 +42,7 @@ export default function GraphView({ textbookId }: { textbookId: string | null })
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [ForceGraph, setForceGraph] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // 动态导入 react-force-graph-2d（避免 SSR 问题）
   useEffect(() => {
@@ -118,6 +119,28 @@ export default function GraphView({ textbookId }: { textbookId: string | null })
     setSheetOpen(true);
   }, []);
 
+  const filteredData = useMemo(() => {
+    if (!searchTerm.trim()) return graphData;
+    const term = searchTerm.toLowerCase();
+    const matchedIds = new Set(
+      graphData.nodes
+        .filter((n) => n.name.toLowerCase().includes(term) || n.definition.toLowerCase().includes(term))
+        .map((n) => n.id)
+    );
+    // 包含匹配节点及其直接邻居
+    const neighborIds = new Set(matchedIds);
+    graphData.links.forEach((l) => {
+      if (matchedIds.has(l.source as string)) neighborIds.add(l.target as string);
+      if (matchedIds.has(l.target as string)) neighborIds.add(l.source as string);
+    });
+    return {
+      nodes: graphData.nodes.filter((n) => neighborIds.has(n.id)),
+      links: graphData.links.filter(
+        (l) => neighborIds.has(l.source as string) && neighborIds.has(l.target as string)
+      ),
+    };
+  }, [graphData, searchTerm]);
+
   if (!textbookId) {
     return (
       <div className="flex-1 flex flex-col min-w-0">
@@ -133,12 +156,21 @@ export default function GraphView({ textbookId }: { textbookId: string | null })
 
   return (
     <div className="flex-1 flex flex-col min-w-0">
-      <div className="p-4 border-b border-border bg-card flex items-center justify-between">
-        <h2 className="text-lg font-semibold">知识图谱</h2>
-        <Button onClick={buildGraph} disabled={loading} size="sm">
-          {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Brain className="w-4 h-4 mr-2" />}
-          {loading ? "构建中..." : "构建图谱"}
-        </Button>
+      <div className="p-4 border-b border-border bg-card space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">知识图谱</h2>
+          <Button onClick={buildGraph} disabled={loading} size="sm">
+            {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Brain className="w-4 h-4 mr-2" />}
+            {loading ? "构建中..." : "构建图谱"}
+          </Button>
+        </div>
+        <input
+          type="text"
+          placeholder="搜索知识点..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full text-sm px-3 py-1.5 rounded border border-input bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+        />
       </div>
 
       <div className="flex-1 bg-background relative">
@@ -150,7 +182,7 @@ export default function GraphView({ textbookId }: { textbookId: string | null })
           </div>
         ) : ForceGraph ? (
           <ForceGraph
-            graphData={graphData}
+            graphData={filteredData}
             nodeVal={(n: any) => Math.log(n.frequency + 1) * 4}
             nodeColor={(n: any) => colorMap[n.textbookId] || "#999"}
             linkColor={() => "#cbd5e1"}
