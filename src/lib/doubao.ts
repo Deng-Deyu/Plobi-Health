@@ -1,9 +1,20 @@
 import OpenAI from 'openai';
 
 function getArk() {
+  const apiKey = process.env.ARK_API_KEY;
+  const baseURL = process.env.ARK_BASE_URL;
+  
+  if (!apiKey) {
+    throw new Error(
+      'Missing ARK_API_KEY. Please set the environment variable.\n' +
+      'For Vercel: vercel env add ARK_API_KEY\n' +
+      'Or use OPENAI_API_KEY as fallback.'
+    );
+  }
+  
   return new OpenAI({
-    apiKey: process.env.ARK_API_KEY!,
-    baseURL: process.env.ARK_BASE_URL,
+    apiKey,
+    baseURL: baseURL || 'https://ark.cn-beijing.volces.com/api/v3',
   });
 }
 
