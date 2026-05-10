@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     }));
 
     const { text } = await generateText({
-      model: ark.chat(process.env.ARK_CHAT_MODEL || 'kimi-k2.6'),
+      model: ark.chat(process.env.ARK_CHAT_MODEL || 'doubao-pro-32k-character-241215'),
       system: '你是一个专业的教材文本提取器。请读取图片中的文本，忽略页眉页脚，保留章节标题（用 Markdown 格式），直接输出纯文本，不要任何解释。',
       messages: [
         {
