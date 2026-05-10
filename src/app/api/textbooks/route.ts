@@ -50,3 +50,26 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+    
+    if (!id) {
+      return NextResponse.json({ error: "Missing id parameter" }, { status: 400 });
+    }
+
+    const textbooks = readDb();
+    const filtered = textbooks.filter((tb) => tb.id !== id);
+    
+    if (filtered.length === textbooks.length) {
+      return NextResponse.json({ error: "Textbook not found" }, { status: 404 });
+    }
+
+    writeDb(filtered);
+    return NextResponse.json({ ok: true });
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
+}

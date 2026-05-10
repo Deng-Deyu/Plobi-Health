@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Upload, BookOpen, FileText, ChevronDown, ChevronRight, X } from "lucide-react";
+import { Upload, BookOpen, FileText, ChevronDown, ChevronRight, X, Trash2 } from "lucide-react";
 import { parsePdf } from "@/lib/parser/pdf";
 import { parseMd } from "@/lib/parser/md";
 import { parseTxt } from "@/lib/parser/txt";
@@ -73,6 +73,30 @@ export default function TextbookPanel({
       onSelectionChange?.(Array.from(next));
       return next;
     });
+  };
+
+  const deleteTextbook = async (id: string, name: string) => {
+    if (!confirm(`确定要删除教材「${name}」吗？`)) return;
+    
+    try {
+      const res = await fetch(`/api/textbooks?id=${id}`, { method: "DELETE" });
+      if (res.ok) {
+        // 从选中列表移除
+        setLocalSelected((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          onSelectionChange?.(Array.from(next));
+          return next;
+        });
+        // 刷新列表
+        fetchList();
+      } else {
+        alert("删除失败");
+      }
+    } catch (e) {
+      console.error("删除教材失败:", e);
+      alert("删除失败");
+    }
   };
 
   const parseFile = async (file: File): Promise<{ chapters: Chapter[]; fullText: string }> => {
@@ -284,6 +308,16 @@ export default function TextbookPanel({
                       <ChevronRight className="w-4 h-4 text-muted-foreground" />
                     )}
                   </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteTextbook(tb.id, tb.name);
+                    }}
+                    className="shrink-0 p-1 rounded hover:bg-destructive/10 group"
+                    title="删除教材"
+                  >
+                    <Trash2 className="w-4 h-4 text-muted-foreground group-hover:text-destructive" />
+                  </button>
                 </div>
               </CardHeader>
               <CardContent className="p-3 pt-1">
